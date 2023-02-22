@@ -1,9 +1,13 @@
 package e2e
 
 import (
+	"encoding/json"
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/DRK-Blutspende-BaWueHe/go-hl7"
+	"github.com/DRK-Blutspende-BaWueHe/go-hl7/lib/hl7v23"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,12 +24,11 @@ func TestMessageIdentification(t *testing.T) {
 	assert.Equal(t, "2.3", protocolVersion)
 }
 
-/*
 // Test_Parse_MSH_Segment, this test has only one line
 func Test_Parse_MSH_Segment(t *testing.T) {
 	fileData := fmt.Sprintf("MSH|^~\\&|HL7_Host^b^c|HL7_Office^^Xyz|CIT^^|LAB|20110926125155||ORM^O01|20110926125155|P|2.3|||ER|ER||8859/1~second_element|<\u000d")
 
-	var message hl7v23.ORM_001
+	var message hl7v23.ORM_O01
 	err := hl7.Unmarshal(
 		[]byte(fileData),
 		&message,
@@ -47,7 +50,7 @@ func Test_Parse_MSH_Segment(t *testing.T) {
 	assert.Equal(t, "ORM", message.MSH.MessageType)
 	assert.Equal(t, "O01", message.MSH.MessageTriggerEvent)
 	assert.Equal(t, "20110926125155", message.MSH.MessageControlID)
-	assert.Equal(t, "P", message.MSH.ProccessingID)
+	assert.Equal(t, "P", message.MSH.ProcessingID)
 	assert.Equal(t, "2.3", message.MSH.VersionID)
 	assert.Equal(t, 0, message.MSH.SequenceNumber)
 	assert.Equal(t, "", message.MSH.ContinuationPointer)
@@ -67,7 +70,7 @@ func Test_Order_ORM_generic1(t *testing.T) {
 	filedata = filedata + "ORC|NW|000218T018||||Not used|^^^^^R||20110926120055\u000d"
 	filedata = filedata + "OBR|1|000218T018||101~102||20110926120000|||||A||||\u000d"
 
-	var message hl7v23.ORM_001
+	var message hl7v23.ORM_O01
 	err := hl7.Unmarshal(
 		[]byte(filedata),
 		&message,
@@ -100,37 +103,61 @@ func Test_Order_ORM_generic1(t *testing.T) {
 
 	assert.Equal(t, 1, len(message.Order))
 
-	assert.Equal(t, "NW", message.Order[0].CommondOrderSegment.OrderControl)
-	assert.Equal(t, "000218T018", message.Order[0].CommondOrderSegment.PlacerOrderNumber.EntityIdentifier)
-	assert.Equal(t, "", message.Order[0].CommondOrderSegment.PlacerOrderNumber.NamespaceId)
-	assert.Equal(t, "", message.Order[0].CommondOrderSegment.PlacerOrderNumber.UniversalId)
-	assert.Equal(t, "", message.Order[0].CommondOrderSegment.PlacerOrderNumber.UniversalIdType)
-	assert.Equal(t, "", message.Order[0].CommondOrderSegment.FillerOrderNumber.EntityIdentifier)
-	assert.Equal(t, "", message.Order[0].CommondOrderSegment.PlacerGroupNumber.EntityIdentifier)
-	assert.Equal(t, "", message.Order[0].CommondOrderSegment.OrderStatus)
-	assert.Equal(t, "Not used", message.Order[0].CommondOrderSegment.ResponseFlag)
-	assert.Equal(t, "R", message.Order[0].CommondOrderSegment.QuantityTiming.Priority)
-	assert.Equal(t, "", message.Order[0].CommondOrderSegment.QuantityTiming.Duration)
-	assert.Equal(t, "R", message.Order[0].CommondOrderSegment.QuantityTiming.Priority)
-	assert.Equal(t, "", message.Order[0].CommondOrderSegment.QuantityTiming.Condition)
-	assert.Equal(t, "", message.Order[0].CommondOrderSegment.ParentOrder.ParentsPlacerOrderNumber)
-	assert.Equal(t, "", message.Order[0].CommondOrderSegment.ParentOrder.ParentsFillerOrderNumber)
-	assert.Equal(t, "2011-09-26 10:00:55 +0000 UTC", message.Order[0].CommondOrderSegment.DateTimeOfTransaction.String())
+	assert.Equal(t, "NW", message.Order[0].CommonOrderSegment.OrderControl)
+	assert.Equal(t, "000218T018", message.Order[0].CommonOrderSegment.PlacerOrderNumber.EntityIdentifier)
+	assert.Equal(t, "", message.Order[0].CommonOrderSegment.PlacerOrderNumber.NamespaceId)
+	assert.Equal(t, "", message.Order[0].CommonOrderSegment.PlacerOrderNumber.UniversalId)
+	assert.Equal(t, "", message.Order[0].CommonOrderSegment.PlacerOrderNumber.UniversalIdType)
+	assert.Equal(t, "", message.Order[0].CommonOrderSegment.FillerOrderNumber.EntityIdentifier)
+	assert.Equal(t, "", message.Order[0].CommonOrderSegment.PlacerGroupNumber.EntityIdentifier)
+	assert.Equal(t, "", message.Order[0].CommonOrderSegment.OrderStatus)
+	assert.Equal(t, "Not used", message.Order[0].CommonOrderSegment.ResponseFlag)
+	assert.Equal(t, "R", message.Order[0].CommonOrderSegment.QuantityTiming.Priority)
+	assert.Equal(t, "", message.Order[0].CommonOrderSegment.QuantityTiming.Duration)
+	assert.Equal(t, "R", message.Order[0].CommonOrderSegment.QuantityTiming.Priority)
+	assert.Equal(t, "", message.Order[0].CommonOrderSegment.QuantityTiming.Condition)
+	assert.Equal(t, "", message.Order[0].CommonOrderSegment.ParentOrder.ParentsPlacerOrderNumber)
+	assert.Equal(t, "", message.Order[0].CommonOrderSegment.ParentOrder.ParentsFillerOrderNumber)
+	assert.Equal(t, "2011-09-26 10:00:55 +0000 UTC", message.Order[0].CommonOrderSegment.DateTimeOfTransaction.String())
 
 	assert.Nil(t, err)
-	assert.NotNil(t, message.Order[0].Detail.ObservationRequestSegment)
-	assert.Equal(t, "1", message.Order[0].Detail.ObservationRequestSegment.ObservationRequest)
-	assert.Equal(t, "000218T018", message.Order[0].Detail.ObservationRequestSegment.PlacerOrderNumber.EntityIdentifier)
-	assert.Equal(t, "", message.Order[0].Detail.ObservationRequestSegment.PlacerOrderNumber.NamespaceId)
-	assert.Equal(t, "", message.Order[0].Detail.ObservationRequestSegment.PlacerOrderNumber.UniversalId)
-	assert.Equal(t, "", message.Order[0].Detail.ObservationRequestSegment.PlacerOrderNumber.UniversalIdType)
-	assert.Equal(t, "", message.Order[0].Detail.ObservationRequestSegment.FillerOrderNumber.EntityIdentifier)
-	assert.Equal(t, "101", message.Order[0].Detail.ObservationRequestSegment.UniversalServiceIdentifier.Identifier)
-	assert.Equal(t, "", message.Order[0].Detail.ObservationRequestSegment.UniversalServiceIdentifier.Text)
-	assert.Equal(t, "", message.Order[0].Detail.ObservationRequestSegment.Priority)
-	assert.Equal(t, "2011-09-26 10:00:00 +0000 UTC", message.Order[0].Detail.ObservationRequestSegment.RequestedDateTime.String())
-	assert.Equal(t, "0001-01-01 00:00:00 +0000 UTC", message.Order[0].Detail.ObservationRequestSegment.ObservationDateTime.String())
-	assert.Equal(t, "A", message.Order[0].Detail.ObservationRequestSegment.SpecimenActionCode)
+	assert.NotNil(t, message.Order[0].OrderDetail.OrderDetailSegment.ObservationRequestSegment)
+	assert.Equal(t, "1", message.Order[0].OrderDetail.OrderDetailSegment.ObservationRequestSegment.ObservationRequest)
+	assert.Equal(t, "000218T018", message.Order[0].OrderDetail.OrderDetailSegment.ObservationRequestSegment.PlacerOrderNumber.EntityIdentifier)
+	assert.Equal(t, "", message.Order[0].OrderDetail.OrderDetailSegment.ObservationRequestSegment.PlacerOrderNumber.NamespaceId)
+	assert.Equal(t, "", message.Order[0].OrderDetail.OrderDetailSegment.ObservationRequestSegment.PlacerOrderNumber.UniversalId)
+	assert.Equal(t, "", message.Order[0].OrderDetail.OrderDetailSegment.ObservationRequestSegment.PlacerOrderNumber.UniversalIdType)
+	assert.Equal(t, "", message.Order[0].OrderDetail.OrderDetailSegment.ObservationRequestSegment.FillerOrderNumber.EntityIdentifier)
+	assert.Equal(t, "101", message.Order[0].OrderDetail.OrderDetailSegment.ObservationRequestSegment.UniversalServiceIdentifier.Identifier)
+	assert.Equal(t, "", message.Order[0].OrderDetail.OrderDetailSegment.ObservationRequestSegment.UniversalServiceIdentifier.Text)
+	assert.Equal(t, "", message.Order[0].OrderDetail.OrderDetailSegment.ObservationRequestSegment.Priority)
+	assert.Equal(t, "2011-09-26 10:00:00 +0000 UTC", message.Order[0].OrderDetail.OrderDetailSegment.ObservationRequestSegment.RequestedDateTime.String())
+	assert.Equal(t, "0001-01-01 00:00:00 +0000 UTC", message.Order[0].OrderDetail.OrderDetailSegment.ObservationRequestSegment.ObservationDateTime.String())
+	assert.Equal(t, "A", message.Order[0].OrderDetail.OrderDetailSegment.ObservationRequestSegment.SpecimenActionCode)
 
 }
-*/
+
+// See it yourself: uncomment this to locally check the HL7 struct format (exported to JSON)
+// Open the JSON with your favorite editor, fold the segments for an easy read.
+func TestMSH(t *testing.T) {
+	sample := `MSH|^~\&|SWISSLAB|FFM||FFM|20230203080903||ORM^O01|o3057937.000001|P|2.3|` + "\r"
+	sample += `PID|||01077843||CL5AVA0N7K|||U|` + "\r"
+	sample += `PV1||S|||||||||||||||||S01077843|` + "\r"
+	sample += `ORC|NW||23071012||||||20230203080800|||BSD|` + "\r"
+	sample += `OBR|||23071012|HINAET^HIV-1/2 PCR mit erhöhter Sensitivität|||20230203080900|||||||||BSD|||||||||P|` + "\r"
+	sample += `ORC|NW||23071013||||||20230203080800|||BSD|` + "\r"
+	sample += `OBR|||23071013|HCNAET^HCV PCR mit erhöhter Sensitivität|||20230203080900|||||||||BSD|||||||||P|` + "\r"
+	sample += `ORC|NW||23071014||||||20230203080800|||BSD|` + "\r"
+	sample += `OBR|||23071014|HBNAET^HBV PCR mit erhöhter Sensitivität|||20230203080900|||||||||BSD|||||||||P|` + "\r"
+	dest := hl7v23.ORM_O01{}
+	err := hl7.Unmarshal([]byte(sample), &dest, hl7.EncodingUTF8, hl7.TimezoneEuropeBerlin)
+	out, _ := json.MarshalIndent(dest, "", "\t")
+	assert.Nil(t, err)
+	file, err := os.Create("testMSH.json")
+	if err != nil {
+		t.Error(err)
+	} else {
+		file.Write(out)
+		file.Close()
+	}
+}
